@@ -1,2 +1,10 @@
+edu/itc/arithlex/ArithLexGUI.class
 edu/itc/arithlex/ArithLexScanner.class
+edu/itc/arithlex/LexerResult.class
+edu/itc/arithlex/LexerService.class
+edu/itc/arithlex/ArithLexGUI$RoundedPanel.class
+edu/itc/arithlex/LexicalError.class
 edu/itc/arithlex/App.class
+edu/itc/arithlex/ArithLexGUI$1.class
+edu/itc/arithlex/Token.class
+edu/itc/arithlex/ArithLexGUI$2.class

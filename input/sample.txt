@@ -1,0 +1,6 @@
+total = 12.5 + qty * 2;
+result = (10 + 5) / 3;
+average = total / count;
+price = 100 @ 5;
+discount = 20 # 2;
+x=2888;
