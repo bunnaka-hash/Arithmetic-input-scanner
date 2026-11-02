@@ -1,7 +1,7 @@
-/Users/admin/Documents/ArithLex/arithlex/src/main/java/edu/itc/arithlex/App.java
-/Users/admin/Documents/ArithLex/arithlex/src/main/java/edu/itc/arithlex/ArithLexGUI.java
-/Users/admin/Documents/ArithLex/arithlex/src/main/java/edu/itc/arithlex/LexerResult.java
-/Users/admin/Documents/ArithLex/arithlex/src/main/java/edu/itc/arithlex/LexerService.java
-/Users/admin/Documents/ArithLex/arithlex/src/main/java/edu/itc/arithlex/LexicalError.java
-/Users/admin/Documents/ArithLex/arithlex/src/main/java/edu/itc/arithlex/Token.java
-/Users/admin/Documents/ArithLex/arithlex/target/generated-sources/jflex/edu/itc/arithlex/ArithLexScanner.java
+/home/jingpo/ITC-I4/Course/Compilation-e/Project/Arithmetic-input-scanner/src/main/java/edu/itc/arithlex/App.java
+/home/jingpo/ITC-I4/Course/Compilation-e/Project/Arithmetic-input-scanner/src/main/java/edu/itc/arithlex/ArithLexGUI.java
+/home/jingpo/ITC-I4/Course/Compilation-e/Project/Arithmetic-input-scanner/src/main/java/edu/itc/arithlex/LexerResult.java
+/home/jingpo/ITC-I4/Course/Compilation-e/Project/Arithmetic-input-scanner/src/main/java/edu/itc/arithlex/LexerService.java
+/home/jingpo/ITC-I4/Course/Compilation-e/Project/Arithmetic-input-scanner/src/main/java/edu/itc/arithlex/LexicalError.java
+/home/jingpo/ITC-I4/Course/Compilation-e/Project/Arithmetic-input-scanner/src/main/java/edu/itc/arithlex/Token.java
+/home/jingpo/ITC-I4/Course/Compilation-e/Project/Arithmetic-input-scanner/target/generated-sources/jflex/edu/itc/arithlex/ArithLexScanner.java
