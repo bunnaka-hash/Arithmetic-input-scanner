@@ -7,20 +7,63 @@ package edu.itc.arithlex;
 %unicode
 %line
 %column
-%type Object
+%type Token
+
+DIGIT = [0-9]
+LETTER = [a-zA-Z_]
+
+IDENTIFIER = {LETTER}({LETTER}|{DIGIT})*
+INTEGER = {DIGIT}+
+DECIMAL = {DIGIT}+"."{DIGIT}+
 
 %%
 
-[0-9]+ {
-    System.out.println("INTEGER: " + yytext()
-        + " | Line: " + (yyline + 1)
-        + " | Column: " + (yycolumn + 1));
+{DECIMAL} {
+    return new Token(
+        "DECIMAL", yytext(), yyline + 1, yycolumn + 1
+    );
 }
 
-"+" {
-    System.out.println("PLUS: " + yytext()
-        + " | Line: " + (yyline + 1)
-        + " | Column: " + (yycolumn + 1));
+{INTEGER} {
+    return new Token(
+        "INTEGER", yytext(), yyline + 1, yycolumn + 1
+    );
+}
+
+{IDENTIFIER} {
+    return new Token(
+        "IDENTIFIER", yytext(), yyline + 1, yycolumn + 1
+    );
+}
+
+">=" | "<=" | "==" | "!=" | ">" | "<" {
+    return new Token(
+        "COMPARISON_OP", yytext(), yyline + 1, yycolumn + 1
+    );
+}
+
+"=" {
+    return new Token(
+        "ASSIGN", yytext(), yyline + 1, yycolumn + 1
+    );
+}
+
+"+" | "-" | "*" | "/" {
+    return new Token(
+        "ARITHMETIC_OP", yytext(), yyline + 1, yycolumn + 1
+    );
+}
+
+"(" | ")" {
+    return new Token(
+        "PARENTHESIS", yytext(), yyline + 1, yycolumn + 1
+    );
+}
+
+";" {
+    return new Token(
+        "SEMICOLON", yytext(), yyline + 1, yycolumn + 1
+    );
 }
 
 [ \t\r\n]+ {
@@ -28,7 +71,7 @@ package edu.itc.arithlex;
 }
 
 . {
-    System.out.println("UNKNOWN: " + yytext()
-        + " | Line: " + (yyline + 1)
-        + " | Column: " + (yycolumn + 1));
+    return new Token(
+        "UNKNOWN", yytext(), yyline + 1, yycolumn + 1
+    );
 }

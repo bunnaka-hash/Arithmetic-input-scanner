@@ -1,20 +1,43 @@
 package edu.itc.arithlex;
 
-import java.io.StringReader;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class App {
 
     public static void main(String[] args) throws IOException {
 
-        String input = "total = 12 + 5;";
+        String input = Files.readString(
+                Path.of("input/sample.txt"),
+                StandardCharsets.UTF_8
+        );
 
-        System.out.println("Input: " + input);
-        System.out.println("\nLexical Analysis Results:");
+        LexerService lexerService = new LexerService();
 
-        ArithLexScanner scanner =
-                new ArithLexScanner(new StringReader(input));
+        LexerResult result = lexerService.analyze(input);
 
-        scanner.yylex();
+        System.out.println("LEXICAL ANALYSIS RESULTS");
+        System.out.println("----------------------------------------------");
+
+        for (Token token : result.getTokens()) {
+            System.out.println(token);
+        }
+
+        System.out.println("\nLEXICAL ERRORS");
+        System.out.println("----------------------------------------------");
+
+        if (result.getErrors().isEmpty()) {
+            System.out.println("No lexical errors found.");
+        } else {
+            for (LexicalError error : result.getErrors()) {
+                System.out.println(error);
+            }
+        }
+
+        System.out.println("----------------------------------------------");
+        System.out.println("Total tokens: " + result.getTokens().size());
+        System.out.println("Total errors: " + result.getErrors().size());
     }
 }
