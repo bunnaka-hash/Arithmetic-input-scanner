@@ -3,30 +3,75 @@ package edu.itc.arithlex;
 import com.formdev.flatlaf.FlatLightLaf;
 
 import javax.swing.*;
+import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.MatteBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.swing.table.DefaultTableModel;
+import javax.swing.plaf.basic.BasicSplitPaneUI;
 import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.geom.RoundRectangle2D;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class ArithLexGUI extends JFrame {
 
-    // ---------- Colors ----------
-    private static final Color BACKGROUND = new Color(246, 247, 251);
+    // ---------- Colors (Apple system palette) ----------
+    private static final Color BACKGROUND = new Color(245, 245, 247);
+    private static final Color SIDEBAR = new Color(238, 238, 243);
     private static final Color WHITE = Color.WHITE;
-    private static final Color TEXT = new Color(35, 39, 60);
-    private static final Color MUTED = new Color(135, 140, 158);
-    private static final Color BLUE = new Color(55, 112, 245);
-    private static final Color BORDER = new Color(230, 232, 240);
-    private static final Color RED = new Color(220, 65, 75);
+    private static final Color TEXT = new Color(29, 29, 31);
+    private static final Color MUTED = new Color(134, 134, 139);
+    private static final Color BLUE = new Color(0, 122, 255);
+    private static final Color BORDER = new Color(229, 229, 234);
+    private static final Color RED = new Color(235, 50, 45);
+    private static final Color GREEN = new Color(36, 160, 72);
+
+    // ---------- Fonts (SF Pro on Apple, Segoe UI on Windows, ...) ----------
+    private static final Set<String> FAMILIES = new HashSet<>(Arrays.asList(
+            GraphicsEnvironment.getLocalGraphicsEnvironment()
+                    .getAvailableFontFamilyNames()
+    ));
+
+    private static final String UI_FAMILY = pickFamily(
+            "SF Pro Text", "SF Pro Display", "Helvetica Neue",
+            "Segoe UI", "Inter", "SansSerif"
+    );
+
+    private static final String MONO_FAMILY = pickFamily(
+            "SF Mono", "Menlo", "JetBrains Mono", "Consolas", "Monospaced"
+    );
+
+    private static String pickFamily(String... names) {
+        for (String name : names) {
+            if (FAMILIES.contains(name)) {
+                return name;
+            }
+        }
+        return names[names.length - 1];
+    }
+
+    private static Font ui(int style, int size) {
+        return new Font(UI_FAMILY, style, size);
+    }
+
+    private static Font mono(int style, int size) {
+        return new Font(MONO_FAMILY, style, size);
+    }
 
     // ---------- Components ----------
     private JTextArea inputArea;
@@ -52,6 +97,12 @@ public class ArithLexGUI extends JFrame {
         setMinimumSize(new Dimension(1000, 680));
         setLocationRelativeTo(null);
 
+        // macOS: unified, transparent title bar
+        if (System.getProperty("os.name", "").toLowerCase().contains("mac")) {
+            getRootPane().putClientProperty("apple.awt.transparentTitleBar", true);
+            getRootPane().putClientProperty("apple.awt.windowTitleVisible", false);
+        }
+
         getContentPane().setBackground(BACKGROUND);
         setLayout(new BorderLayout());
 
@@ -68,8 +119,8 @@ public class ArithLexGUI extends JFrame {
     private JPanel createSidebar() {
 
         JPanel sidebar = new JPanel();
-        sidebar.setPreferredSize(new Dimension(220, 0));
-        sidebar.setBackground(WHITE);
+        sidebar.setPreferredSize(new Dimension(236, 0));
+        sidebar.setBackground(SIDEBAR);
         sidebar.setBorder(
                 BorderFactory.createMatteBorder(0, 0, 0, 1, BORDER)
         );
@@ -79,40 +130,37 @@ public class ArithLexGUI extends JFrame {
         JPanel top = new JPanel();
         top.setOpaque(false);
         top.setLayout(new BoxLayout(top, BoxLayout.Y_AXIS));
-        top.setBorder(new EmptyBorder(30, 20, 20, 20));
+        top.setBorder(new EmptyBorder(44, 18, 20, 18));
 
-        // Logo
-        JPanel logoRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        JPanel logoRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         logoRow.setOpaque(false);
+        logoRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        logoRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 46));
 
-        JLabel logo = new JLabel("⌘");
-        logo.setHorizontalAlignment(SwingConstants.CENTER);
-        logo.setFont(new Font("SansSerif", Font.BOLD, 27));
-        logo.setForeground(WHITE);
-        logo.setOpaque(true);
-        logo.setBackground(BLUE);
-        logo.setPreferredSize(new Dimension(46, 46));
+        LogoBadge logo = new LogoBadge("⌘");
 
         JLabel brand = new JLabel("ArithLex");
-        brand.setFont(new Font("SansSerif", Font.BOLD, 21));
+        brand.setFont(ui(Font.BOLD, 20));
         brand.setForeground(TEXT);
+        brand.setBorder(new EmptyBorder(0, 12, 0, 0));
 
         logoRow.add(logo);
         logoRow.add(brand);
 
-        JLabel description = new JLabel("  Lexical Analyzer");
-        description.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        JLabel description = new JLabel("Lexical Analyzer");
+        description.setFont(ui(Font.PLAIN, 12));
         description.setForeground(MUTED);
+        description.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         top.add(logoRow);
-        top.add(Box.createVerticalStrut(5));
+        top.add(Box.createVerticalStrut(8));
         top.add(description);
-        top.add(Box.createVerticalStrut(40));
+        top.add(Box.createVerticalStrut(36));
 
         top.add(createNavButton("▣", "Workspace", true));
-        top.add(Box.createVerticalStrut(8));
+        top.add(Box.createVerticalStrut(4));
         top.add(createNavButton("▤", "Documentation", false));
-        top.add(Box.createVerticalStrut(8));
+        top.add(Box.createVerticalStrut(4));
         top.add(createNavButton("ⓘ", "About ArithLex", false));
 
         sidebar.add(top, BorderLayout.NORTH);
@@ -120,15 +168,17 @@ public class ArithLexGUI extends JFrame {
         JPanel bottom = new JPanel();
         bottom.setOpaque(false);
         bottom.setLayout(new BoxLayout(bottom, BoxLayout.Y_AXIS));
-        bottom.setBorder(new EmptyBorder(15, 22, 25, 15));
+        bottom.setBorder(new EmptyBorder(15, 24, 26, 15));
 
         JLabel version = new JLabel("VERSION 1.0.0");
-        version.setFont(new Font("SansSerif", Font.BOLD, 10));
+        version.setFont(ui(Font.BOLD, 10));
         version.setForeground(MUTED);
+        version.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel technology = new JLabel("Java  •  JFlex");
-        technology.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        technology.setFont(ui(Font.PLAIN, 12));
         technology.setForeground(MUTED);
+        technology.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         bottom.add(version);
         bottom.add(Box.createVerticalStrut(5));
@@ -145,26 +195,7 @@ public class ArithLexGUI extends JFrame {
             boolean selected
     ) {
 
-        JButton button = new JButton(icon + "    " + label);
-
-        button.setHorizontalAlignment(SwingConstants.LEFT);
-        button.setFont(new Font("SansSerif", Font.PLAIN, 13));
-        button.setFocusPainted(false);
-        button.setBorder(new EmptyBorder(12, 14, 12, 10));
-        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 44));
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
-        if (selected) {
-            button.setBackground(new Color(235, 241, 255));
-            button.setForeground(BLUE);
-            button.setFont(new Font("SansSerif", Font.BOLD, 13));
-        } else {
-            button.setBackground(WHITE);
-            button.setForeground(TEXT);
-        }
-
-        button.setOpaque(true);
-        button.setBorderPainted(false);
+        NavButton button = new NavButton(icon + "    " + label, selected);
 
         button.addActionListener(e -> {
             if (label.equals("Documentation")) {
@@ -183,13 +214,13 @@ public class ArithLexGUI extends JFrame {
 
     private JPanel createWorkspace() {
 
-        JPanel workspace = new JPanel(new BorderLayout(0, 22));
+        JPanel workspace = new JPanel(new BorderLayout(0, 12));
         workspace.setBackground(BACKGROUND);
-        workspace.setBorder(new EmptyBorder(28, 30, 25, 30));
+        workspace.setBorder(new EmptyBorder(40, 30, 18, 30));
 
         workspace.add(createHeader(), BorderLayout.NORTH);
 
-        JPanel body = new JPanel(new BorderLayout(0, 18));
+        JPanel body = new JPanel(new BorderLayout(0, 6));
         body.setOpaque(false);
 
         body.add(createEditorSection(), BorderLayout.NORTH);
@@ -204,34 +235,39 @@ public class ArithLexGUI extends JFrame {
 
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
+        header.setBorder(new EmptyBorder(0, 6, 0, 6));
 
         JPanel heading = new JPanel();
         heading.setOpaque(false);
         heading.setLayout(new BoxLayout(heading, BoxLayout.Y_AXIS));
 
         JLabel title = new JLabel("Arithmetic Expression Analyzer");
-        title.setFont(new Font("SansSerif", Font.BOLD, 25));
+        title.setFont(ui(Font.BOLD, 28));
         title.setForeground(TEXT);
+        title.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel subtitle = new JLabel(
                 "Analyze the lexical structure of your arithmetic expressions."
         );
-        subtitle.setFont(new Font("SansSerif", Font.PLAIN, 13));
+        subtitle.setFont(ui(Font.PLAIN, 14));
         subtitle.setForeground(MUTED);
+        subtitle.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         heading.add(title);
-        heading.add(Box.createVerticalStrut(7));
+        heading.add(Box.createVerticalStrut(6));
         heading.add(subtitle);
 
-        statusLabel = new JLabel("●  Ready");
-        statusLabel.setFont(new Font("SansSerif", Font.BOLD, 12));
-        statusLabel.setForeground(new Color(35, 155, 100));
-        statusLabel.setOpaque(true);
-        statusLabel.setBackground(new Color(231, 248, 239));
-        statusLabel.setBorder(new EmptyBorder(9, 14, 9, 14));
+        statusLabel = new PillLabel("●  Ready");
+        statusLabel.setFont(ui(Font.BOLD, 12));
+        statusLabel.setForeground(GREEN);
+        statusLabel.setBorder(new EmptyBorder(8, 14, 8, 14));
+
+        JPanel statusWrap = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        statusWrap.setOpaque(false);
+        statusWrap.add(statusLabel);
 
         header.add(heading, BorderLayout.WEST);
-        header.add(statusLabel, BorderLayout.EAST);
+        header.add(statusWrap, BorderLayout.EAST);
 
         return header;
     }
@@ -242,32 +278,33 @@ public class ArithLexGUI extends JFrame {
 
     private JPanel createEditorSection() {
 
-        JPanel section = new JPanel(new BorderLayout(0, 12));
+        JPanel section = new JPanel(new BorderLayout(0, 4));
         section.setOpaque(false);
 
         JPanel titleRow = new JPanel(new BorderLayout());
         titleRow.setOpaque(false);
+        titleRow.setBorder(new EmptyBorder(0, 6, 0, 6));
 
         JLabel label = new JLabel("Input Expression");
-        label.setFont(new Font("SansSerif", Font.BOLD, 15));
+        label.setFont(ui(Font.BOLD, 16));
         label.setForeground(TEXT);
 
         JLabel hint = new JLabel("Enter an expression or open a .txt file");
-        hint.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        hint.setFont(ui(Font.PLAIN, 12));
         hint.setForeground(MUTED);
 
         titleRow.add(label, BorderLayout.WEST);
         titleRow.add(hint, BorderLayout.EAST);
 
-        RoundedPanel editorCard = new RoundedPanel(16, WHITE);
+        RoundedPanel editorCard = new RoundedPanel(16, WHITE, 8);
         editorCard.setLayout(new BorderLayout());
-        editorCard.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         inputArea = new JTextArea();
-        inputArea.setFont(new Font("Monospaced", Font.PLAIN, 14));
-        inputArea.setForeground(new Color(40, 48, 75));
+        inputArea.setFont(mono(Font.PLAIN, 14));
+        inputArea.setForeground(TEXT);
         inputArea.setBackground(WHITE);
         inputArea.setCaretColor(BLUE);
+        inputArea.setSelectionColor(new Color(179, 215, 255));
         inputArea.setLineWrap(false);
         inputArea.setTabSize(4);
         inputArea.setBorder(new EmptyBorder(8, 12, 8, 12));
@@ -275,16 +312,17 @@ public class ArithLexGUI extends JFrame {
         lineNumbers = new JTextArea("1");
         lineNumbers.setEditable(false);
         lineNumbers.setFocusable(false);
-        lineNumbers.setFont(new Font("Monospaced", Font.PLAIN, 14));
-        lineNumbers.setForeground(new Color(165, 170, 185));
-        lineNumbers.setBackground(new Color(249, 250, 253));
+        lineNumbers.setFont(mono(Font.PLAIN, 14));
+        lineNumbers.setForeground(new Color(174, 174, 178));
+        lineNumbers.setBackground(WHITE);
         lineNumbers.setBorder(new EmptyBorder(8, 12, 8, 12));
 
         JScrollPane editorScroll = new JScrollPane(inputArea);
         editorScroll.setBorder(BorderFactory.createEmptyBorder());
         editorScroll.setRowHeaderView(lineNumbers);
+        editorScroll.getRowHeader().setBackground(WHITE);
         editorScroll.getViewport().setBackground(WHITE);
-        editorScroll.setPreferredSize(new Dimension(700, 175));
+        editorScroll.setPreferredSize(new Dimension(700, 160));
 
         inputArea.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e) {
@@ -304,14 +342,15 @@ public class ArithLexGUI extends JFrame {
 
         JPanel actionRow = new JPanel(new BorderLayout());
         actionRow.setOpaque(false);
+        actionRow.setBorder(new EmptyBorder(0, 6, 0, 6));
 
-        JPanel leftActions = new JPanel(new FlowLayout(FlowLayout.LEFT, 9, 0));
+        JPanel leftActions = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         leftActions.setOpaque(false);
 
-        JButton analyzeButton = createButton("▶  Analyze", BLUE, WHITE);
-        JButton clearButton = createButton("Clear", new Color(235, 237, 243), TEXT);
-        JButton openButton = createButton("Open File", WHITE, TEXT);
-        JButton saveButton = createButton("Save Result", WHITE, TEXT);
+        JButton analyzeButton = createButton("▶  Analyze", AppleButton.Style.PRIMARY);
+        JButton clearButton = createButton("Clear", AppleButton.Style.SECONDARY);
+        JButton openButton = createButton("Open File", AppleButton.Style.OUTLINE);
+        JButton saveButton = createButton("Save Result", AppleButton.Style.OUTLINE);
 
         analyzeButton.addActionListener(this::analyzeInput);
         clearButton.addActionListener(e -> clearAll());
@@ -321,7 +360,7 @@ public class ArithLexGUI extends JFrame {
         leftActions.add(analyzeButton);
         leftActions.add(clearButton);
 
-        JPanel rightActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        JPanel rightActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         rightActions.setOpaque(false);
         rightActions.add(openButton);
         rightActions.add(saveButton);
@@ -329,7 +368,7 @@ public class ArithLexGUI extends JFrame {
         actionRow.add(leftActions, BorderLayout.WEST);
         actionRow.add(rightActions, BorderLayout.EAST);
 
-        JPanel editorContent = new JPanel(new BorderLayout(0, 12));
+        JPanel editorContent = new JPanel(new BorderLayout(0, 6));
         editorContent.setOpaque(false);
         editorContent.add(editorCard, BorderLayout.CENTER);
         editorContent.add(actionRow, BorderLayout.SOUTH);
@@ -363,14 +402,15 @@ public class ArithLexGUI extends JFrame {
 
     private JPanel createResultsSection() {
 
-        JPanel section = new JPanel(new BorderLayout(0, 12));
+        JPanel section = new JPanel(new BorderLayout(0, 4));
         section.setOpaque(false);
 
         JPanel summary = new JPanel(new BorderLayout());
         summary.setOpaque(false);
+        summary.setBorder(new EmptyBorder(10, 6, 0, 6));
 
         JLabel resultTitle = new JLabel("Analysis Results");
-        resultTitle.setFont(new Font("SansSerif", Font.BOLD, 15));
+        resultTitle.setFont(ui(Font.BOLD, 16));
         resultTitle.setForeground(TEXT);
 
         JPanel counts = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
@@ -385,7 +425,6 @@ public class ArithLexGUI extends JFrame {
         summary.add(resultTitle, BorderLayout.WEST);
         summary.add(counts, BorderLayout.EAST);
 
-        // Token table
         String[] columns = {"Token Type", "Lexeme", "Line", "Column"};
 
         tableModel = new DefaultTableModel(columns, 0) {
@@ -396,60 +435,68 @@ public class ArithLexGUI extends JFrame {
         };
 
         tokenTable = new JTable(tableModel);
-        tokenTable.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        tokenTable.setRowHeight(34);
+        tokenTable.setFont(ui(Font.PLAIN, 13));
+        tokenTable.setBackground(WHITE);
+        tokenTable.setRowHeight(38);
         tokenTable.setShowVerticalLines(false);
-        tokenTable.setGridColor(BORDER);
-        tokenTable.setSelectionBackground(new Color(232, 240, 255));
+        tokenTable.setShowHorizontalLines(true);
+        tokenTable.setGridColor(new Color(242, 242, 247));
+        tokenTable.setSelectionBackground(new Color(224, 238, 255));
         tokenTable.setSelectionForeground(TEXT);
         tokenTable.setFillsViewportHeight(true);
         tokenTable.setIntercellSpacing(new Dimension(0, 1));
 
-        tokenTable.getTableHeader().setFont(
-                new Font("SansSerif", Font.BOLD, 12)
-        );
-        tokenTable.getTableHeader().setBackground(
-                new Color(247, 248, 252)
-        );
-        tokenTable.getTableHeader().setForeground(TEXT);
+        tokenTable.getTableHeader().setDefaultRenderer(new HeaderRenderer());
+        tokenTable.getTableHeader().setReorderingAllowed(false);
         tokenTable.getTableHeader().setPreferredSize(
-                new Dimension(0, 38)
+                new Dimension(0, 36)
         );
-
-        DefaultTableCellRenderer centerRenderer =
-                new DefaultTableCellRenderer();
-
-        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-
-        tokenTable.getColumnModel().getColumn(2)
-                .setCellRenderer(centerRenderer);
-
-        tokenTable.getColumnModel().getColumn(3)
-                .setCellRenderer(centerRenderer);
 
         tokenTable.getColumnModel().getColumn(0)
-                .setPreferredWidth(150);
+                .setCellRenderer(new ChipRenderer());
 
         tokenTable.getColumnModel().getColumn(1)
-                .setPreferredWidth(150);
+                .setCellRenderer(
+                        new CellRenderer(SwingConstants.LEFT, true, false)
+                );
+
+        tokenTable.getColumnModel().getColumn(2)
+                .setCellRenderer(
+                        new CellRenderer(SwingConstants.CENTER, false, true)
+                );
+
+        tokenTable.getColumnModel().getColumn(3)
+                .setCellRenderer(
+                        new CellRenderer(SwingConstants.CENTER, false, true)
+                );
+
+        tokenTable.getColumnModel().getColumn(0)
+                .setPreferredWidth(170);
+
+        tokenTable.getColumnModel().getColumn(1)
+                .setPreferredWidth(170);
+
+        tokenTable.getColumnModel().getColumn(2)
+                .setPreferredWidth(70);
+
+        tokenTable.getColumnModel().getColumn(3)
+                .setPreferredWidth(70);
 
         JScrollPane tableScroll = new JScrollPane(tokenTable);
         tableScroll.setBorder(BorderFactory.createEmptyBorder());
         tableScroll.getViewport().setBackground(WHITE);
 
-        RoundedPanel tokenCard = new RoundedPanel(16, WHITE);
+        RoundedPanel tokenCard = new RoundedPanel(16, WHITE, 10);
         tokenCard.setLayout(new BorderLayout());
-        tokenCard.setBorder(new EmptyBorder(10, 10, 10, 10));
         tokenCard.add(tableScroll, BorderLayout.CENTER);
 
-        // Error panel
         JPanel errorHeader = new JPanel(new BorderLayout());
         errorHeader.setOpaque(false);
         errorHeader.setBorder(new EmptyBorder(0, 0, 10, 0));
 
         JLabel errorTitle = new JLabel("⚠  Lexical Errors");
-        errorTitle.setFont(new Font("SansSerif", Font.BOLD, 14));
-        errorTitle.setForeground(new Color(190, 55, 65));
+        errorTitle.setFont(ui(Font.BOLD, 14));
+        errorTitle.setForeground(RED);
 
         errorHeader.add(errorTitle, BorderLayout.WEST);
 
@@ -457,22 +504,21 @@ public class ArithLexGUI extends JFrame {
         errorArea.setEditable(false);
         errorArea.setLineWrap(true);
         errorArea.setWrapStyleWord(true);
-        errorArea.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        errorArea.setFont(ui(Font.PLAIN, 13));
         errorArea.setForeground(new Color(150, 55, 65));
         errorArea.setBackground(WHITE);
+        errorArea.setBorder(new EmptyBorder(2, 2, 2, 2));
         errorArea.setText("No lexical errors found.");
 
         JScrollPane errorScroll = new JScrollPane(errorArea);
         errorScroll.setBorder(BorderFactory.createEmptyBorder());
         errorScroll.getViewport().setBackground(WHITE);
 
-        RoundedPanel errorCard = new RoundedPanel(16, WHITE);
+        RoundedPanel errorCard = new RoundedPanel(16, WHITE, 14);
         errorCard.setLayout(new BorderLayout());
-        errorCard.setBorder(new EmptyBorder(15, 15, 15, 15));
         errorCard.add(errorHeader, BorderLayout.NORTH);
         errorCard.add(errorScroll, BorderLayout.CENTER);
 
-        // Split result panels
         JSplitPane splitPane = new JSplitPane(
                 JSplitPane.HORIZONTAL_SPLIT,
                 tokenCard,
@@ -480,10 +526,17 @@ public class ArithLexGUI extends JFrame {
         );
 
         splitPane.setResizeWeight(0.68);
-        splitPane.setDividerSize(9);
+        splitPane.setDividerSize(4);
         splitPane.setBorder(BorderFactory.createEmptyBorder());
         splitPane.setOpaque(false);
         splitPane.setContinuousLayout(true);
+
+        // Invisible divider so the two cards float on the background
+        if (splitPane.getUI() instanceof BasicSplitPaneUI) {
+            BasicSplitPaneUI splitUI = (BasicSplitPaneUI) splitPane.getUI();
+            splitUI.getDivider().setBackground(BACKGROUND);
+            splitUI.getDivider().setBorder(null);
+        }
 
         section.add(summary, BorderLayout.NORTH);
         section.add(splitPane, BorderLayout.CENTER);
@@ -529,7 +582,7 @@ public class ArithLexGUI extends JFrame {
 
             if (errors.isEmpty()) {
                 errorArea.setText("✓  No lexical errors found.");
-                errorArea.setForeground(new Color(35, 145, 95));
+                errorArea.setForeground(GREEN);
             } else {
                 StringBuilder errorText = new StringBuilder();
 
@@ -552,7 +605,7 @@ public class ArithLexGUI extends JFrame {
             );
 
             if (errors.isEmpty()) {
-                setStatus("●  Analysis Complete", new Color(35, 155, 100));
+                setStatus("●  Analysis Complete", GREEN);
             } else {
                 setStatus("●  Completed with Errors", RED);
             }
@@ -578,35 +631,92 @@ public class ArithLexGUI extends JFrame {
 
         JFileChooser chooser = new JFileChooser();
 
-        chooser.setDialogTitle("Open Arithmetic Expression File");
+        chooser.setDialogTitle("Import Arithmetic Expression File");
+
         chooser.setFileFilter(
                 new FileNameExtensionFilter("Text Files (*.txt)", "txt")
         );
 
-        if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+        int result = chooser.showOpenDialog(this);
 
-            Path path = chooser.getSelectedFile().toPath();
+        if (result != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
 
-            try {
-                String content = Files.readString(
-                        path,
-                        StandardCharsets.UTF_8
+        Path selectedFile = chooser.getSelectedFile().toPath();
+
+        try {
+
+            // Create the project's input directory if necessary.
+            Path inputDirectory = Path.of("input");
+            Files.createDirectories(inputDirectory);
+
+            // Destination file inside the project.
+            Path destination = inputDirectory.resolve(
+                    selectedFile.getFileName()
+            );
+
+            // Check whether the selected file is already the destination.
+            boolean sameFile = Files.exists(destination)
+                    && Files.isSameFile(selectedFile, destination);
+
+            // Ask before replacing an existing file.
+            if (!sameFile && Files.exists(destination)) {
+
+                int answer = JOptionPane.showConfirmDialog(
+                        this,
+                        "A file with this name already exists in input/.\n"
+                                + "Do you want to replace it?",
+                        "Confirm Replacement",
+                        JOptionPane.YES_NO_OPTION
                 );
 
-                inputArea.setText(content);
-                currentFile = path.toString();
+                if (answer != JOptionPane.YES_OPTION) {
+                    return;
+                }
+            }
 
-                setStatus("●  File Loaded", new Color(35, 155, 100));
-
-            } catch (IOException ex) {
-
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Could not open file: " + ex.getMessage(),
-                        "File Error",
-                        JOptionPane.ERROR_MESSAGE
+            // Copy the selected file into input/.
+            if (!sameFile) {
+                Files.copy(
+                        selectedFile,
+                        destination,
+                        StandardCopyOption.REPLACE_EXISTING
                 );
             }
+
+            // Load the copied file into the editor.
+            String content = Files.readString(
+                    destination,
+                    StandardCharsets.UTF_8
+            );
+
+            inputArea.setText(content);
+            currentFile = destination.toString();
+
+            setStatus(
+                    "●  Imported: " + destination.getFileName(),
+                    GREEN
+            );
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "File imported successfully!\n\n"
+                            + "Saved to: " + destination,
+                    "Import Successful",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+
+        } catch (IOException ex) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Could not import file: " + ex.getMessage(),
+                    "Import Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+
+            setStatus("●  Import Failed", RED);
         }
     }
 
@@ -714,7 +824,7 @@ public class ArithLexGUI extends JFrame {
         lastResult = null;
         currentFile = null;
 
-        setStatus("●  Ready", new Color(35, 155, 100));
+        setStatus("●  Ready", GREEN);
     }
 
     private void loadSampleInput() {
@@ -728,35 +838,17 @@ public class ArithLexGUI extends JFrame {
         );
     }
 
-    private JButton createButton(
-            String text,
-            Color background,
-            Color foreground
-    ) {
-
-        JButton button = new JButton(text);
-
-        button.setFont(new Font("SansSerif", Font.BOLD, 12));
-        button.setBackground(background);
-        button.setForeground(foreground);
-        button.setFocusPainted(false);
-        button.setBorder(new EmptyBorder(10, 16, 10, 16));
-        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setOpaque(true);
-        button.setBorderPainted(false);
-
-        return button;
+    private JButton createButton(String text, AppleButton.Style style) {
+        return new AppleButton(text, style);
     }
 
     private JLabel createCountLabel(String text, Color color) {
 
-        JLabel label = new JLabel(text);
+        JLabel label = new PillLabel(text);
 
-        label.setFont(new Font("SansSerif", Font.BOLD, 11));
+        label.setFont(ui(Font.BOLD, 12));
         label.setForeground(color);
-        label.setOpaque(true);
-        label.setBackground(WHITE);
-        label.setBorder(new EmptyBorder(7, 11, 7, 11));
+        label.setBorder(new EmptyBorder(6, 12, 6, 12));
 
         return label;
     }
@@ -809,19 +901,88 @@ public class ArithLexGUI extends JFrame {
     }
 
     // =========================================================
-    // CUSTOM ROUNDED PANEL
+    // CUSTOM UI COMPONENTS
     // =========================================================
 
+    private static void enableAntialiasing(Graphics2D g2) {
+        g2.setRenderingHint(
+                RenderingHints.KEY_ANTIALIASING,
+                RenderingHints.VALUE_ANTIALIAS_ON
+        );
+        g2.setRenderingHint(
+                RenderingHints.KEY_TEXT_ANTIALIASING,
+                RenderingHints.VALUE_TEXT_ANTIALIAS_ON
+        );
+    }
+
+    /** White card with rounded corners and a soft, Apple-style shadow. */
     private static class RoundedPanel extends JPanel {
+
+        private static final int SHADOW = 6;
 
         private final int radius;
         private final Color backgroundColor;
 
-        public RoundedPanel(int radius, Color backgroundColor) {
+        public RoundedPanel(int radius, Color backgroundColor, int padding) {
 
             this.radius = radius;
             this.backgroundColor = backgroundColor;
 
+            setOpaque(false);
+
+            int p = padding + SHADOW;
+            setBorder(new EmptyBorder(p, p, p, p));
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics) {
+
+            Graphics2D g2 = (Graphics2D) graphics.create();
+            enableAntialiasing(g2);
+
+            int w = getWidth();
+            int h = getHeight();
+
+            // Soft layered shadow
+            for (int e = 1; e <= SHADOW - 2; e++) {
+                g2.setColor(new Color(0, 0, 0, 7));
+                g2.fill(new RoundRectangle2D.Float(
+                        SHADOW - e,
+                        SHADOW - e + 2,
+                        w - 2 * SHADOW + 2 * e,
+                        h - 2 * SHADOW + 2 * e,
+                        (radius + e) * 2,
+                        (radius + e) * 2
+                ));
+            }
+
+            // Card body
+            g2.setColor(backgroundColor);
+            g2.fill(new RoundRectangle2D.Float(
+                    SHADOW, SHADOW,
+                    w - 2 * SHADOW, h - 2 * SHADOW,
+                    radius * 2, radius * 2
+            ));
+
+            // Hairline border
+            g2.setColor(BORDER);
+            g2.draw(new RoundRectangle2D.Float(
+                    SHADOW + 0.5f, SHADOW + 0.5f,
+                    w - 2 * SHADOW - 1, h - 2 * SHADOW - 1,
+                    radius * 2, radius * 2
+            ));
+
+            g2.dispose();
+
+            super.paintComponent(graphics);
+        }
+    }
+
+    /** Label drawn as a pill tinted with its own foreground color. */
+    private static class PillLabel extends JLabel {
+
+        PillLabel(String text) {
+            super(text);
             setOpaque(false);
         }
 
@@ -829,31 +990,320 @@ public class ArithLexGUI extends JFrame {
         protected void paintComponent(Graphics graphics) {
 
             Graphics2D g2 = (Graphics2D) graphics.create();
+            enableAntialiasing(g2);
 
-            g2.setRenderingHint(
-                    RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON
+            Color fg = getForeground();
+            g2.setColor(new Color(
+                    fg.getRed(), fg.getGreen(), fg.getBlue(), 30
+            ));
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(),
+                    getHeight(), getHeight());
+
+            g2.dispose();
+
+            super.paintComponent(graphics);
+        }
+    }
+
+    /** Rounded gradient app-icon style badge. */
+    private static class LogoBadge extends JComponent {
+
+        private final String symbol;
+
+        LogoBadge(String symbol) {
+            this.symbol = symbol;
+            setPreferredSize(new Dimension(44, 44));
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics) {
+
+            Graphics2D g2 = (Graphics2D) graphics.create();
+            enableAntialiasing(g2);
+
+            int w = getWidth();
+            int h = getHeight();
+
+            g2.setPaint(new GradientPaint(
+                    0, 0, new Color(90, 170, 255),
+                    0, h, new Color(0, 100, 235)
+            ));
+            g2.fillRoundRect(0, 0, w, h, 22, 22);
+
+            g2.setColor(WHITE);
+            g2.setFont(ui(Font.BOLD, 24));
+            FontMetrics fm = g2.getFontMetrics();
+            int x = (w - fm.stringWidth(symbol)) / 2;
+            int y = (h - fm.getHeight()) / 2 + fm.getAscent();
+            g2.drawString(symbol, x, y);
+
+            g2.dispose();
+        }
+    }
+
+    /** Sidebar navigation item with hover and selected states. */
+    private static class NavButton extends JButton {
+
+        private final boolean selected;
+        private boolean hover = false;
+
+        NavButton(String text, boolean selected) {
+
+            super(text);
+
+            this.selected = selected;
+
+            setHorizontalAlignment(SwingConstants.LEFT);
+            setFont(ui(selected ? Font.BOLD : Font.PLAIN, 13));
+            setForeground(selected ? BLUE : TEXT);
+            setFocusPainted(false);
+            setContentAreaFilled(false);
+            setOpaque(false);
+            setBorderPainted(false);
+            setBorder(new EmptyBorder(11, 14, 11, 10));
+            setAlignmentX(Component.LEFT_ALIGNMENT);
+            setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+            addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    hover = true;
+                    repaint();
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    hover = false;
+                    repaint();
+                }
+            });
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics) {
+
+            Graphics2D g2 = (Graphics2D) graphics.create();
+            enableAntialiasing(g2);
+
+            if (selected) {
+                g2.setColor(new Color(0, 122, 255, 30));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
+            } else if (hover) {
+                g2.setColor(new Color(0, 0, 0, 14));
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
+            }
+
+            g2.dispose();
+
+            super.paintComponent(graphics);
+        }
+    }
+
+    /** Pill-shaped button in three Apple-like styles. */
+    private static class AppleButton extends JButton {
+
+        enum Style { PRIMARY, SECONDARY, OUTLINE }
+
+        private final Style style;
+        private boolean hover = false;
+
+        AppleButton(String text, Style style) {
+
+            super(text);
+
+            this.style = style;
+
+            setFont(ui(Font.BOLD, 13));
+            setForeground(style == Style.PRIMARY ? WHITE : TEXT);
+            setFocusPainted(false);
+            setContentAreaFilled(false);
+            setOpaque(false);
+            setBorderPainted(false);
+            setBorder(new EmptyBorder(9, 18, 9, 18));
+            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+            addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    hover = true;
+                    repaint();
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    hover = false;
+                    repaint();
+                }
+            });
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics) {
+
+            Graphics2D g2 = (Graphics2D) graphics.create();
+            enableAntialiasing(g2);
+
+            boolean pressed = getModel().isPressed();
+            Color fill;
+
+            switch (style) {
+                case PRIMARY:
+                    fill = pressed ? new Color(0, 95, 205)
+                            : hover ? new Color(10, 132, 255)
+                            : BLUE;
+                    break;
+                case SECONDARY:
+                    fill = pressed ? new Color(208, 208, 215)
+                            : hover ? new Color(222, 222, 228)
+                            : new Color(232, 232, 237);
+                    break;
+                default:
+                    fill = pressed ? new Color(236, 236, 242)
+                            : hover ? new Color(247, 247, 250)
+                            : WHITE;
+                    break;
+            }
+
+            g2.setColor(fill);
+            g2.fillRoundRect(0, 0, getWidth(), getHeight(),
+                    getHeight(), getHeight());
+
+            if (style == Style.OUTLINE) {
+                g2.setColor(new Color(210, 210, 215));
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1,
+                        getHeight(), getHeight());
+            }
+
+            g2.dispose();
+
+            super.paintComponent(graphics);
+        }
+    }
+
+    // =========================================================
+    // TABLE RENDERERS
+    // =========================================================
+
+    private static class HeaderRenderer extends DefaultTableCellRenderer {
+
+        @Override
+        public Component getTableCellRendererComponent(
+                JTable table, Object value, boolean isSelected,
+                boolean hasFocus, int row, int column
+        ) {
+
+            super.getTableCellRendererComponent(
+                    table,
+                    value == null ? "" : value.toString().toUpperCase(),
+                    false, false, row, column
             );
 
-            g2.setColor(backgroundColor);
+            setHorizontalAlignment(
+                    column >= 2 ? SwingConstants.CENTER : SwingConstants.LEFT
+            );
+            setFont(ui(Font.BOLD, 11));
+            setForeground(MUTED);
+            setBackground(WHITE);
+            setOpaque(true);
+            setBorder(new CompoundBorder(
+                    new MatteBorder(0, 0, 1, 0, BORDER),
+                    new EmptyBorder(0, 14, 0, 14)
+            ));
 
-            g2.fillRoundRect(
-                    0, 0,
-                    getWidth(),
-                    getHeight(),
-                    radius,
-                    radius
+            return this;
+        }
+    }
+
+    private static class CellRenderer extends DefaultTableCellRenderer {
+
+        private final int alignment;
+        private final boolean monospaced;
+        private final boolean muted;
+
+        CellRenderer(int alignment, boolean monospaced, boolean muted) {
+            this.alignment = alignment;
+            this.monospaced = monospaced;
+            this.muted = muted;
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(
+                JTable table, Object value, boolean isSelected,
+                boolean hasFocus, int row, int column
+        ) {
+
+            super.getTableCellRendererComponent(
+                    table, value, isSelected, false, row, column
             );
 
-            g2.setColor(BORDER);
+            setHorizontalAlignment(alignment);
+            setFont(monospaced ? mono(Font.PLAIN, 13) : ui(Font.PLAIN, 13));
+            setForeground(muted && !isSelected ? MUTED : TEXT);
+            setBorder(new EmptyBorder(0, 14, 0, 14));
 
-            g2.drawRoundRect(
-                    0, 0,
-                    getWidth() - 1,
-                    getHeight() - 1,
-                    radius,
-                    radius
+            return this;
+        }
+    }
+
+    /** Draws the token type as a colored capsule. */
+    private static class ChipRenderer extends DefaultTableCellRenderer {
+
+        private static final Color[] PALETTE = {
+                new Color(0, 122, 255),
+                new Color(36, 138, 61),
+                new Color(201, 52, 0),
+                new Color(175, 82, 222),
+                new Color(215, 0, 75),
+                new Color(0, 130, 155),
+                new Color(88, 86, 214)
+        };
+
+        private Color chip = BLUE;
+
+        @Override
+        public Component getTableCellRendererComponent(
+                JTable table, Object value, boolean isSelected,
+                boolean hasFocus, int row, int column
+        ) {
+
+            super.getTableCellRendererComponent(
+                    table, value, isSelected, false, row, column
             );
+
+            String text = String.valueOf(value);
+            chip = PALETTE[Math.floorMod(text.hashCode(), PALETTE.length)];
+
+            setHorizontalAlignment(SwingConstants.LEFT);
+            setFont(ui(Font.BOLD, 11));
+            setForeground(chip);
+            setBorder(new EmptyBorder(0, 23, 0, 12));
+            setOpaque(false);
+
+            return this;
+        }
+
+        @Override
+        protected void paintComponent(Graphics graphics) {
+
+            Graphics2D g2 = (Graphics2D) graphics.create();
+            enableAntialiasing(g2);
+
+            // Row background (we are not opaque, so paint it ourselves)
+            g2.setColor(getBackground());
+            g2.fillRect(0, 0, getWidth(), getHeight());
+
+            FontMetrics fm = getFontMetrics(getFont());
+            int textWidth = fm.stringWidth(getText());
+            int pillHeight = 22;
+            int x = Math.max(0, getInsets().left - 10);
+            int y = (getHeight() - pillHeight) / 2;
+
+            g2.setColor(new Color(
+                    chip.getRed(), chip.getGreen(), chip.getBlue(), 30
+            ));
+            g2.fillRoundRect(x, y, textWidth + 20, pillHeight,
+                    pillHeight, pillHeight);
 
             g2.dispose();
 
@@ -867,15 +1317,28 @@ public class ArithLexGUI extends JFrame {
 
     public static void main(String[] args) {
 
+        System.setProperty("apple.awt.application.name", "ArithLex");
+
         SwingUtilities.invokeLater(() -> {
 
             FlatLightLaf.setup();
 
+            UIManager.put("defaultFont", ui(Font.PLAIN, 13));
+
             UIManager.put("Component.arc", 12);
-            UIManager.put("Button.arc", 12);
+            UIManager.put("Button.arc", 999);
             UIManager.put("TextComponent.arc", 10);
-            UIManager.put("ScrollBar.width", 10);
-            UIManager.put("Table.rowHeight", 34);
+            UIManager.put("Table.rowHeight", 38);
+
+            // Thin, rounded, macOS-style scrollbars
+            UIManager.put("ScrollBar.width", 12);
+            UIManager.put("ScrollBar.thumbArc", 999);
+            UIManager.put("ScrollBar.thumbInsets", new Insets(2, 2, 2, 2));
+            UIManager.put("ScrollBar.showButtons", false);
+            UIManager.put("ScrollBar.track", new Color(0, 0, 0, 0));
+            UIManager.put("ScrollBar.thumb", new Color(0, 0, 0, 55));
+            UIManager.put("ScrollBar.hoverThumbColor", new Color(0, 0, 0, 100));
+            UIManager.put("ScrollBar.pressedThumbColor", new Color(0, 0, 0, 130));
 
             ArithLexGUI window = new ArithLexGUI();
             window.setVisible(true);
